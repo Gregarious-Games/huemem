@@ -83,6 +83,28 @@ verify, regrow, and rebuild-parent all live in `huemem.py` —
 no duplicated offset math. PNGs are written atomically:
 temp file, fsync, rename.
 
+## Recall
+
+The PNG is the authoritative record; the recall index is derived and
+regenerable. `huemem_recall.py` builds it on demand and retrieves with
+three-way reciprocal-rank fusion (k=60) over lexical IDF overlap with
+synonym expansion, dense cosine over the memory word list, and dense
+cosine over a one-sentence distinguishing description written at write
+time (a `distinguishing:` line in the memory's `.md` sidecar; the
+`source:` sentence is used when it is absent).
+
+```bash
+python3 huemem_recall.py search memories "Who wrote an early algorithm?" --top 3
+python3 huemem_recall.py search memories "Why is the connection blocked?" --abstain
+```
+
+Measured results on a frozen 40-memory test set, including the
+head-to-head against plain text search and the audit caveats, are in
+`RESULTS.md`. Headline: paraphrase rank-1 34/43 against 14/43 for plain
+text search on the same prompts; exact 10/10. Abstention is not solved:
+no single threshold gives both zero false refusals and full no-memory
+abstention, so quote the operating point with its numbers.
+
 ## License
 
 MIT. See `LICENSE`.
