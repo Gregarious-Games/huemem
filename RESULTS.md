@@ -356,3 +356,67 @@ restart, re-run with Part C shrunk 1000→300 and per-part checkpointing):
   models x re-encoding per prompt), not live query cost. Speed was
   declared secondary to recall; these numbers are reported, not claimed
   as an advantage.
+
+## Scale: 65 memories (2026-11-18)
+
+First step on the data-scale lever, on Greg's "use what we create"
+instruction. The corpus grew 40 → 65: 25 new memories from the last 24
+hours of this project (accelerator, two heads, Left's review and fixes,
+benchmark, GitHub pushes, continuance correction), in
+`recall-test/expanded2/`, all HUEM-encoded and verified; the golden set
+was not touched. System H measured with the shipped `huemem_recall`
+module on the combined 65 (68 paraphrase, 35 exact, 12 two-turn,
+14 no-memory prompts; script `recall-test/measure_65.py`, results in
+`expanded2/results-65.json`):
+
+- Paraphrase rank-1 58/68 (gold subset 37/43, new 21/25); Recall@3
+  64/68; Recall@5 66/68. Plain text on the same prompts: 29/68.
+- Exact 26/35, down from 10/10 at 40 memories.
+- Two-turn: turn-1 correct 6/12, turn-2 consistent 11/12, turn-2
+  correct 7/12.
+- Abstention: the Round 24 logistic abstains on 14/14 no-memory
+  prompts but refuses 22 correct ones at N=65 — it was fitted at
+  N=40 and the score distribution shifts with corpus size, so it
+  does not transfer as fitted. The plain-cos threshold (0.25) still
+  holds zero false refusals but catches only 5/14. The next
+  refinement is to refit the logistic per corpus size.
+- Honesty note: the first run of this measurement printed wrong
+  Recall@3/Recall@5 (a script bug measured rank-1 three times);
+  it was caught, fixed, and the corrected re-run gave 64/66.
+
+## Refit at N=65 (2026-11-18)
+
+The named refinement, done the same day on Greg's continuance
+instruction. Script `recall-test/refit_abstain_65.py`, features from
+the shipped `huemem_recall.abstain_features`, same L2 logistic
+(C=0.5), same LOO-calibrated threshold, qlen still excluded;
+candidate weights in `recall-test/expanded2/abstain_logistic_weights_65.json`
+(the shipped `abstain_logistic_weights.json` is NOT yet replaced):
+
+- LOO AUROC 0.971 (was 0.994 at N=40). At zero false refusals the
+  refit abstains on 11/14 no-memory prompts — against the old
+  weights at N=65, which abstained on 14/14 but refused 22/68
+  correct prompts, and against the plain-cos threshold, which holds
+  zero false refusals but catches only 5/14. The refit trades 3
+  no-memory abstentions for 22 fewer false refusals: the right
+  trade under the system's own operating-point convention.
+- Full no-memory abstention still costs 21/68 false refusals at
+  N=65. The refit does not solve abstention; it repairs the
+  zero-false operating point.
+- End-to-end through `RecallIndex.search(abstain_logistic=True)` with
+  the candidate weights: 11/14 no-memory abstained, 0/68 paraphrase
+  false refusals, 4/35 exact false refusals (exact was not fitted).
+- Plain-s1-only LOO for comparison: AUROC 0.957, 5/14 at zero false
+  refusals — the logistic still beats the single threshold.
+
+Exact-prompt diagnosis (`recall-test/diagnose_exact_65.py`,
+`expanded2/exact-diagnosis-65.json`): all 9 exact misses are new
+expanded2 memories — the golden 10/10 holds. In 5 of the 9, the
+expected memory's word-cosine beats the winner's (e.g. 0.603 vs
+0.34), so the word leg alone favours the verbatim match and the
+three-way RRF fusion demotes it; the plain gate fired on only 2 of
+the 9 misses. The drop is a fusion/neighbour-collision effect in
+the new, closely-related accelerator memories, not a gate failure.
+Next lever to test: a verbatim-match boost (e.g. word-cos-dominant
+ranking when the verbatim score is decisive), or distinguishing
+sentences that separate the accelerator neighbours.
