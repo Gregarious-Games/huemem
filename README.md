@@ -87,11 +87,16 @@ temp file, fsync, rename.
 
 The PNG is the authoritative record; the recall index is derived and
 regenerable. `huemem_recall.py` builds it on demand and retrieves with
+a confidence-gated switch: a one-sentence plain-language summary per
+memory (a `plain:` line in the memory's `.md` sidecar, written in the
+plainest everyday words) is scored by dense cosine, and when its top-1
+score is ≥ 0.40 with a margin ≥ 0.05 over the runner-up, the plain
+ranker's top-1 is the answer. Otherwise the answer comes from
 three-way reciprocal-rank fusion (k=60) over lexical IDF overlap with
 synonym expansion, dense cosine over the memory word list, and dense
 cosine over a one-sentence distinguishing description written at write
-time (a `distinguishing:` line in the memory's `.md` sidecar; the
-`source:` sentence is used when it is absent).
+time (a `distinguishing:` line in the sidecar; the `source:` sentence
+is used when it is absent).
 
 ```bash
 python3 huemem_recall.py search memories "Who wrote an early algorithm?" --top 3
@@ -100,10 +105,27 @@ python3 huemem_recall.py search memories "Why is the connection blocked?" --abst
 
 Measured results on a frozen 40-memory test set, including the
 head-to-head against plain text search and the audit caveats, are in
-`RESULTS.md`. Headline: paraphrase rank-1 34/43 against 14/43 for plain
-text search on the same prompts; exact 10/10. Abstention is not solved:
-no single threshold gives both zero false refusals and full no-memory
-abstention, so quote the operating point with its numbers.
+`RESULTS.md`. Headline: paraphrase rank-1 39/43 against 14/43 for plain
+text search on the same prompts; Recall@3 42/43, Recall@5 43/43;
+two-turn 9/9; exact 10/10; vocabulary-gap 6/6. Honest expectation
+~38/43 after split-half validation. The plain summaries are
+human-authored — a small local generator writing them collapses the
+system to 34/43, so that number is a human-summary number.
+
+Abstention is not solved in the strong sense: no point gives both
+zero false refusals and full no-memory abstention. The shipped
+operating point is a score-distribution logistic
+(`--abstain-logistic`, weights in `abstain_logistic_weights.json`):
+honest leave-one-out 8/11 no-memory prompts abstained at zero false
+refusals, 1/43 false refusals at full abstention.
+
+The accelerator library (`huemem_accel.py`, documented in
+`ACCELERATOR.md`) is the fast path over the same system: a
+streaming header-only PNG reader, a derived index, vectorized search
+that agrees with the original on all 53 test prompts, and a read-only
+parity fault report. At N = 10,000 memories a query runs about
+100–200 ms on the test VM; collisions, not latency, are what degrades
+first.
 
 ## License
 
