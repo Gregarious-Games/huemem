@@ -1,0 +1,59 @@
+{
+  "A_latency_ms": {
+    "100": {
+      "mean_ms": 0.477,
+      "p95_ms": 0.515,
+      "max_ms": 0.775
+    },
+    "1000": {
+      "mean_ms": 7.723,
+      "p95_ms": 11.068,
+      "max_ms": 11.228
+    },
+    "5000": {
+      "mean_ms": 108.681,
+      "p95_ms": 190.538,
+      "max_ms": 196.569
+    },
+    "10000": {
+      "mean_ms": 205.083,
+      "p95_ms": 283.326,
+      "max_ms": 296.775
+    }
+  },
+  "B_build": {
+    "mpnet_docs_per_s": 2.1,
+    "build_seconds_N10000_est": 14465,
+    "header_scan_ms_per_png": 0.06,
+    "full_load_vs_scan": 323.4,
+    "query_encode_ms": 50.6,
+    "build_index_200_seconds": 265.8
+  },
+  "C_collisions_N300": {
+    "top1": 74,
+    "n": 100,
+    "low_margin_lt_0.05": 93
+  },
+  "A_latency_ms_768": {
+    "100": {
+      "mean_ms": 0.843,
+      "p95_ms": 1.267,
+      "max_ms": 2.81
+    },
+    "1000": {
+      "mean_ms": 7.739,
+      "p95_ms": 8.994,
+      "max_ms": 10.924
+    },
+    "5000": {
+      "mean_ms": 49.832,
+      "p95_ms": 64.232,
+      "max_ms": 95.914
+    },
+    "10000": {
+      "mean_ms": 110.162,
+      "p95_ms": 132.022,
+      "max_ms": 149.361
+    }
+  }
+}
